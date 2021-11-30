@@ -16,27 +16,34 @@ app.get("/", (req, res) => {
 
 app.post("/", (req, res) => {
   let userObj = {
-    id: Math.round(Math.random(0,9) * 1000, 4),
+    id: Math.round(Math.random(0,9) * 1000, 4), // Math.floor(Math.random() * 600)
     name: req.body.name,
     aboutMe: req.body.aboutMe,
     github: req.body.github,
     twitter: req.body.twitter,
     books: req.body.books.split(","),
   }
-  fs.readFile(database, "utf-8")
-    .then(dataObjJson => {
-      let dataObj = JSON.parse(dataObjJson)
-      console.log(dataObj["users"])
-      dataObj["users"].push(userObj)
-      return dataObj
+  fs.readFile(database, "utf-8") // default is buffer
+    .then((content) => JSON.parse(content))
+    .then((jsonObj) => {
+      let newJsonObj = jsonObj;
+      newJsonObj.users.push(userObj)
+      fs.writeFile(database, JSON.stringify(newJsonObj))
+      .then(res.redirect(`/people/${userObj.id}`))
+      .catch(err => console.log(err))
     })
-    .then(dataObj => {
-      fs.writeFile(database, JSON.stringify(dataObj))
-    })
-})
+    .catch(err => console.log(err))
+  })
+
 
 app.get("/people/:id", (req, res) => {
-  res.render("people");
+  const id = parseInt(req.params.id);
+  fs.readFile("database.json", "utf8")
+    .then((content) => JSON.parse(content).users)
+    .then((listOfUsers) => listOfUsers.find((user) => user.id === id))
+    .then((foundUser) => {
+      res.render("people", { user: foundUser });
+    });
 });
 
 app.get("/:id/photos", (req, res) => {
